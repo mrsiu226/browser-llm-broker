@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browser LLM Broker Dashboard</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="shortcut icon" href="/favicon.svg">
+  <meta name="theme-color" content="#10a37f">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <script src="vendor/katex/katex.min.js"></script>
+</head>
+<body>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- Modal Dialog Container -->
+  <div id="modal-container" class="hidden"></div>
+
+  <!-- App Wrapper -->
+  <div id="app">
+
+    <!-- 1. Login View -->
+    <div id="login-view" class="hidden">
+      <div class="login-card">
+        <div class="login-header">
+          <div class="brand-icon" style="margin: 0 auto 12px; width: 40px; height: 40px; font-size: 18px;">M</div>
+          <h1>Browser LLM Broker</h1>
+          <p>Sign in to access your devices, jobs and schedules</p>
+          <p style="margin-top:8px"><a href="#docs">Guide &amp; extension download →</a></p>
+        </div>
+
+        <div id="login-error" class="alert alert-danger hidden"></div>
+
+        <form id="login-form">
+          <div class="form-group">
+            <label class="form-label" for="login-email">Email Address</label>
+            <input class="input" type="email" id="login-email" required placeholder="admin@example.com" autocomplete="email">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="login-password">Password</label>
+            <input class="input" type="password" id="login-password" required placeholder="••••••••" autocomplete="current-password">
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">
+            Sign In
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Docs (public) -->
+    <div id="docs-view" class="hidden">
+      <header class="docs-top">
+        <div class="docs-brand"><div class="brand-icon">M</div><strong>Browser LLM Broker</strong></div>
+        <div class="docs-top-actions">
+          <a class="btn btn-primary btn-sm" id="docs-download" href="/download/extension.zip">Download extension (.zip)</a>
+          <a class="btn btn-secondary btn-sm" id="docs-lang" href="#docs/en">English</a>
+          <a class="btn btn-secondary btn-sm" id="docs-back" href="#devices">Dashboard</a>
+        </div>
+      </header>
+      <div class="docs-layout">
+        <nav class="docs-toc" id="docs-toc" aria-label="Contents"></nav>
+        <article class="md docs-body" id="docs-body">Loading…</article>
+      </div>
+    </div>
+
+    <!-- 2. Authenticated Dashboard Layout -->
+    <div id="app-container" class="hidden">
+
+      <!-- Sidebar -->
+      <aside id="sidebar">
+        <div class="brand">
+          <div class="brand-icon">M</div>
+          <div class="brand-title">LLM Broker</div>
+        </div>
+
+        <ul class="nav-links">
+          <li class="nav-item">
+            <a href="#devices" class="nav-link" id="nav-devices">
+              <span>Devices</span>
+              <span class="nav-badge" id="badge-devices">0</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#jobs" class="nav-link" id="nav-jobs">
+              <span>Jobs</span>
+              <span class="nav-badge" id="badge-jobs">0</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#schedules" class="nav-link" id="nav-schedules">
+              <span>Schedules</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#channels" class="nav-link" id="nav-channels">
+              <span>Channels</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#keys" class="nav-link" id="nav-keys">
+              <span>API Keys</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#docs" class="nav-link" id="nav-docs">
+              <span>Docs</span>
+            </a>
+          </li>
+          <li class="nav-item" id="nav-admin-wrap" style="display: none;">
+            <a href="#admin" class="nav-link" id="nav-admin">
+              <span>Admin</span>
+              <span class="badge" style="font-size: 9px; padding: 1px 4px; background: var(--warning-subtle); color: var(--warning-text);">Admin</span>
+            </a>
+          </li>
+        </ul>
+
+        <!-- Sidebar User Footer -->
+        <div class="sidebar-footer">
+          <div class="user-profile">
+            <div class="user-name">
+              <span id="user-display-name">Loading...</span>
+              <span id="user-display-role" class="badge" style="font-size: 10px;">User</span>
+            </div>
+            <div class="user-email" id="user-display-email">-</div>
+          </div>
+          <div class="sidebar-actions">
+            <button class="btn btn-secondary btn-sm" id="btn-change-password" style="flex: 1;">Password</button>
+            <button class="btn btn-secondary btn-sm" id="btn-logout" style="flex: 1;">Sign out</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main id="main-content">
+        <header class="top-bar">
+          <div class="page-title-wrap">
+            <h1 id="page-title">Dashboard</h1>
+            <div class="live-indicator" id="live-indicator" title="Auto-polling active (3s)">
+              <div class="live-dot"></div>
+              <span>Live (3s)</span>
+            </div>
+          </div>
+          <div id="top-bar-actions"></div>
+        </header>
+
+        <section id="content-body" class="content-body"></section>
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- Main ES Module Script -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>

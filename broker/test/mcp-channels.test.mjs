@@ -1,0 +1,28 @@
+// Integration test (see test/run.mjs). Talks to a real broker process with a fake Chrome extension.
+import http from "node:http";
+import WebSocket from "ws";
+const got=[]; const rx=http.createServer((q,s)=>{let b="";q.on("data",d=>b+=d);q.on("end",()=>{got.push(JSON.parse(b));s.writeHead(200).end("ok")})}).listen(9099);
+const B = process.env.BASE_URL; let cookie="";
+const api=async(m,p,b)=>{const r=await fetch(B+p,{method:m,headers:{"content-type":"application/json","x-requested-with":"dashboard",cookie},body:b?JSON.stringify(b):undefined});const sc=r.headers.get("set-cookie");if(sc)cookie=sc.split(";")[0];return{s:r.status,j:await r.json().catch(()=>null)}};
+const ck=(n,c,x="")=>console.log((c?"PASS ":"FAIL ")+n+(c?"":" "+JSON.stringify(x)));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+await api("POST","/api/auth/login",{email:"admin@x.io",password:"adminpass1"});
+const pc=await api("POST","/api/devices/pairing");const pj=await (await fetch(B+"/api/device/pair",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code:pc.j.code,label:"D"})})).json();
+const ws=new WebSocket(B.replace(/^http/, "ws") + "/ws");ws.on("message",raw=>{const m=JSON.parse(raw);if(m.type==="generate_image"){ws.send(JSON.stringify({type:"started",id:m.id}));ws.send(JSON.stringify({type:"result",id:m.id,text:"ans",images:[],conversationUrl:"https://chatgpt.com/c/x1"}))}});
+await new Promise(r=>ws.on("open",r));ws.send(JSON.stringify({type:"auth",token:pj.deviceToken}));await sleep(300);
+await api("POST","/api/channels",{type:"webhook",name:"Team Hook",config:{url:"http://127.0.0.1:9099/h"}});
+const k=(await api("POST","/api/keys",{name:"t"})).j.key;
+const H={"content-type":"application/json",accept:"application/json, text/event-stream",authorization:"Bearer "+k};
+const mcp=async b=>await (await fetch(B+"/mcp",{method:"POST",headers:H,body:JSON.stringify(b)})).text();
+await mcp({jsonrpc:"2.0",id:1,method:"initialize",params:{protocolVersion:"2025-03-26",capabilities:{},clientInfo:{name:"t",version:"0"}}});
+const lc=await mcp({jsonrpc:"2.0",id:2,method:"tools/call",params:{name:"list_channels",arguments:{}}}); ck("list_channels",lc.includes("Team Hook"),lc.slice(0,200));
+const r1=await mcp({jsonrpc:"2.0",id:3,method:"tools/call",params:{name:"ask_chatgpt",arguments:{prompt:"q",mode:"text",channel:"team hook"}}}); await sleep(500);
+ck("mcp ask_chatgpt delivers to channel by name",r1.includes("ans")&&got.length===1&&got[0].result.text==="ans"&&got[0].job.source==="mcp",{got:got.length});
+const jid=/job id: ([\w-]+)/.exec(r1)[1];
+const r2=await mcp({jsonrpc:"2.0",id:4,method:"tools/call",params:{name:"continue_chat",arguments:{jobId:jid,prompt:"more",channel:"Team Hook"}}}); await sleep(500);
+ck("continue_chat delivers to channel",got.length===2,got.length);
+const r3=await mcp({jsonrpc:"2.0",id:5,method:"tools/call",params:{name:"ask_chatgpt",arguments:{prompt:"q",channel:"nope"}}});
+ck("unknown channel error",r3.includes("unknown channel")&&r3.includes("isError"),r3.slice(0,200));
+const v=await fetch(B+"/v1/jobs?wait=10",{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+k},body:JSON.stringify({prompt:"q",mode:"text",channelId:"Team Hook"})}); await sleep(500);
+ck("REST channelId accepts name",v.status===200&&got.length===3,{s:v.status,n:got.length});
+process.exit(0);

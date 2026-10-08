@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Browser LLM Broker</title>
+<style>
+ body{font:15px/1.5 system-ui,sans-serif;max-width:560px;margin:40px auto;padding:0 16px;color:#1f2937}
+ h1{font-size:20px} label{display:block;margin:14px 0 4px;font-weight:600}
+ input{width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;box-sizing:border-box}
+ button{margin-top:16px;padding:8px 16px;border:0;border-radius:6px;background:#10a37f;color:#fff;font:inherit;cursor:pointer}
+ button.secondary{background:#e5e7eb;color:#111;margin-left:8px}
+ #msg{margin-top:14px;padding:10px;border-radius:6px;display:none} .ok{background:#dcfce7} .err{background:#fee2e2}
+ .muted{color:#64748b;font-size:13px}
+ @media (prefers-color-scheme:dark){body{background:#0f172a;color:#e5e7eb}input{background:#1e293b;color:#e5e7eb;border-color:#334155}.ok{background:#14532d}.err{background:#7f1d1d}.secondary{background:#334155;color:#e5e7eb}}
+</style></head><body>
+<h1>Browser LLM Broker — this browser</h1>
+<div id="status" class="muted"></div>
+<div id="pair">
+  <label for="server">Server URL</label><input id="server" placeholder="https://broker.example.com">
+  <label for="code">Pairing code</label><input id="code" placeholder="ABCD-1234" autocomplete="off">
+  <label for="label">Name for this browser</label><input id="label" placeholder="Work laptop - Chrome">
+  <button id="connect">Connect</button>
+  <p class="muted">Open the broker dashboard → Devices → “Add device” to get a code (valid 10 minutes). Stay logged in to chatgpt.com in this Chrome profile.</p>
+</div>
+<div id="paired" style="display:none">
+  <div id="conn" class="muted" style="margin:10px 0"></div>
+  <label for="runMode">When a job runs</label>
+  <select id="runMode" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font:inherit">
+    <option value="background">Run quietly in a background tab (Chrome stays where it is)</option>
+    <option value="foreground">Bring Chrome to the front while a job runs</option>
+  </select>
+  <p class="muted">Background mode never switches windows. If ChatGPT refuses to accept the prompt in a background tab, that job is retried once in the foreground automatically.</p>
+  <button id="reconnect">Reconnect now</button>
+  <button id="disconnect" class="secondary">Disconnect this browser</button>
+</div>
+<div id="msg"></div>
+<script src="options.js"></script>
+</body></html>

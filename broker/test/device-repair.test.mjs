@@ -1,0 +1,21 @@
+// Integration test (see test/run.mjs). Talks to a real broker process with a fake Chrome extension.
+import WebSocket from "ws";
+const B = process.env.BASE_URL; let cookie="";
+const api=async(m,p,b)=>{const r=await fetch(B+p,{method:m,headers:{"content-type":"application/json","x-requested-with":"dashboard",cookie},body:b?JSON.stringify(b):undefined});const sc=r.headers.get("set-cookie");if(sc)cookie=sc.split(";")[0];return{s:r.status,j:await r.json().catch(()=>null)}};
+const ck=(n,c,x="")=>console.log((c?"PASS ":"FAIL ")+n+(c?"":" "+JSON.stringify(x)));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+await api("POST","/api/auth/login",{email:"admin@x.io",password:"adminpass1"});
+const pair=async(code)=>await (await fetch(B+"/api/device/pair",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code,label:"ignored"})})).json();
+const pc=await api("POST","/api/devices/pairing"); const p1=await pair(pc.j.code);
+await api("PATCH","/api/devices/"+p1.deviceId,{label:"Mine",tags:["x"]});
+const conn=async(tok)=>{const ws=new WebSocket(B.replace(/^http/, "ws") + "/ws");const out=await new Promise(res=>{ws.on("message",raw=>res(JSON.parse(raw).type));ws.on("open",()=>ws.send(JSON.stringify({type:"auth",token:tok})));ws.on("close",()=>res("closed"))});return{ws,out}};
+const c1=await conn(p1.deviceToken); ck("old token works",c1.out==="auth_ok",c1.out);
+const rp=await api("POST",`/api/devices/${p1.deviceId}/pairing`); ck("repair code",rp.s===200,rp);
+const p2=await pair(rp.j.code);
+ck("same device id, new token",p2.deviceId===p1.deviceId&&p2.deviceToken!==p1.deviceToken,p2);
+await sleep(300);
+const c2=await conn(p2.deviceToken); ck("new token works",c2.out==="auth_ok",c2.out);
+const c3=await conn(p1.deviceToken); ck("old token rejected",c3.out==="auth_error",c3.out);
+const devs=(await api("GET","/api/devices")).j; ck("label/tags kept, still one device",devs.length===1&&devs[0].label==="Mine"&&devs[0].tags[0]==="x",devs);
+ck("foreign device repair 404",(await api("POST","/api/devices/nope/pairing")).s===404);
+process.exit(0);

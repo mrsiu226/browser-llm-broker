@@ -1,0 +1,29 @@
+# Secrets & local config — NEVER commit
+.env
+.env.*
+!.env.example
+config.json
+config.state.json
+
+# Dependencies & build output
+node_modules/
+dist/
+
+# Runtime data
+data/
+output/
+*.db
+*.db-shm
+*.db-wal
+*.log
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Local-only legacy single-user helper (superseded by broker/, kept on disk for the maintainer only)
+/server/
+/install.sh
+/uninstall.sh
+/config.example.json

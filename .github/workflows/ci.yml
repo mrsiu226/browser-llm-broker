@@ -1,0 +1,47 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  broker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: broker/package-lock.json
+      - name: Install
+        working-directory: broker
+        run: npm ci
+      - name: Build (TypeScript)
+        working-directory: broker
+        run: npm run build
+      - name: Integration tests
+        working-directory: broker
+        run: npm test
+
+  extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax-check extension scripts and manifest
+        run: |
+          for f in extension/*.js; do node --check "$f"; done
+          node -e 'JSON.parse(require("fs").readFileSync("extension/manifest.json","utf8"))'
+      - name: Check for committed secrets / build output
+        run: |
+          if git ls-files | grep -E '(^|/)\.env$|(^|/)node_modules/|(^|/)dist/'; then echo "Forbidden files are tracked"; exit 1; fi
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -f broker/Dockerfile -t browser-llm-broker .
